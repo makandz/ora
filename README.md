@@ -1,2 +1,0 @@
-# ora
-Pomodoro, but better.
