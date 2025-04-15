@@ -4,10 +4,9 @@ import type React from "react";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Flow Timer",
+  title: "Ora Timer",
   description:
     "An advanced pomodoro timer that accumulates break time as you work",
-  generator: "v0.dev",
 };
 
 export default function RootLayout({
