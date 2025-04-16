@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { useWakeLock } from "@/hooks/useWakeLock";
 import { AnimatePresence, motion } from "framer-motion";
 import { Coffee, Pause, Play, RotateCcw } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -37,6 +38,8 @@ export default function PomodoroTimer() {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const startTimeRef = useRef<number | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  useWakeLock();
 
   // Initialize audio with better error handling
   useEffect(() => {
