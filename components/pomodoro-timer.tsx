@@ -304,7 +304,7 @@ export default function PomodoroTimer() {
 
   return (
     <div className="fixed inset-0 flex items-center justify-center">
-      <div className="flex flex-col items-center justify-center w-full max-w-md">
+      <div className="flex flex-col items-center justify-center w-full max-w-xl">
         <motion.div
           className="flex flex-col items-center justify-center"
           layout
@@ -322,7 +322,7 @@ export default function PomodoroTimer() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
               transition={{ duration: 0.3 }}
-              className="text-center mb-2"
+              className="text-center"
             >
               {timerState === "idle" ? (
                 <div className="text-neutral-500 font-medium text-xl">
@@ -342,7 +342,7 @@ export default function PomodoroTimer() {
 
           <motion.div
             layout
-            className="text-7xl font-bold text-center my-8 font-manrope tabular-nums"
+            className="text-9xl font-bold text-center my-12 font-manrope tabular-nums"
           >
             {formatTime(elapsedTime)}
           </motion.div>
@@ -351,24 +351,24 @@ export default function PomodoroTimer() {
             <motion.div
               initial={{ opacity: 0, width: 0 }}
               animate={{ opacity: 1, width: "100%" }}
-              className="w-full max-w-xs mb-8"
+              className="w-full max-w-xs mb-12"
             >
-              <Progress value={calculateProgress()} className="h-2" />
+              <Progress value={calculateProgress()} className="h-3" />
             </motion.div>
           )}
 
-          <motion.div className="flex gap-4 mb-8" layout>
+          <motion.div className="flex gap-6 mb-12" layout>
             {timerState === "idle" ? (
               <>
                 <Button
                   onClick={startWorking}
-                  className="bg-emerald-600 hover:bg-emerald-700 text-base font-bold px-6 py-2"
+                  className="bg-emerald-600 hover:bg-emerald-700 text-xl font-bold p-6"
                 >
                   <Play className="mr-2 h-4 w-4" /> Work
                 </Button>
                 <Button
                   onClick={startBreak}
-                  className="bg-blue-600 hover:bg-blue-700 text-base font-bold px-6 py-2"
+                  className="bg-blue-600 hover:bg-blue-700 text-xl font-bold p-6"
                   disabled={breakTime <= 0}
                 >
                   <Coffee className="mr-2 h-4 w-4" /> Break
@@ -378,14 +378,14 @@ export default function PomodoroTimer() {
               <>
                 <Button
                   onClick={pauseTimer}
-                  className="dark-mode-button text-base font-bold px-6 py-2"
+                  className="dark-mode-button text-xl font-bold p-6"
                   variant="outline"
                 >
                   <Pause className="mr-2 h-4 w-4" /> Pause
                 </Button>
                 <Button
                   onClick={resetTimer}
-                  className="text-base font-bold px-6 py-2"
+                  className="text-xl font-bold px-10 p-6"
                   variant="destructive"
                 >
                   <RotateCcw className="mr-2 h-4 w-4" /> Reset
@@ -407,23 +407,27 @@ export default function PomodoroTimer() {
                 }}
                 className="overflow-hidden w-full"
               >
-                <div className="grid grid-cols-2 gap-8 mb-8 w-full max-w-xs mx-auto">
+                <div className="grid grid-cols-2 gap-10 mb-12 w-full max-w-xs mx-auto">
                   <div className="text-center">
-                    <div className="text-sm text-neutral-500 mb-1">
+                    <div className="text-lg text-neutral-500 mb-1">
                       Work Time
                     </div>
-                    <div className="text-2xl font-bold">
+                    <div className="text-4xl font-bold">
                       {formatTime(totalWorkToday)}
                     </div>
                   </div>
                   <div className="text-center">
-                    <div className="text-sm text-neutral-500 mb-1">
+                    <div className="text-lg text-neutral-500 mb-1">
                       Break Time
                     </div>
-                    <div className="text-2xl font-bold">
+                    <div className="text-4xl font-bold">
                       {formatTime(breakTime)}
                     </div>
                   </div>
+                </div>
+
+                <div className="text-center text-sm text-neutral-500 mt-4 max-w-xs mx-auto">
+                  <p>25m work, 5m break, 15m hourly bonus</p>
                 </div>
               </motion.div>
             )}
