@@ -10,25 +10,23 @@ import { useEffect, useRef, useState } from "react";
 type TimerState = "idle" | "working" | "break";
 
 interface TimerData {
-  workTime: number;
   breakTime: number;
   totalWorkToday: number;
-  lastDate: string;
-  cycleCount: number;
+  bonusCount: number;
+  lastTimestamp: number;
 }
 
-const WORK_TO_BREAK_RATIO = 0.25; // 25% of work time becomes break time
+const WORK_TO_BREAK_RATIO = 0.25; // 25% passive break
 const CYCLE_THRESHOLD = 60 * 60; // 60 minutes in seconds
 const CYCLE_BONUS = 15 * 60; // 15 minutes in seconds
 const RESET_HOUR = 5; // Reset at 5am
 
 export default function PomodoroTimer() {
   const [timerState, setTimerState] = useState<TimerState>("idle");
-  const [workTime, setWorkTime] = useState(0);
   const [breakTime, setBreakTime] = useState(0);
   const [elapsedTime, setElapsedTime] = useState(0);
   const [totalWorkToday, setTotalWorkToday] = useState(0);
-  const [cycleCount, setCycleCount] = useState(0);
+  const [bonusCount, setBonusCount] = useState(0);
   const [isInitialized, setIsInitialized] = useState(false);
   const [audioLoaded, setAudioLoaded] = useState(false);
 
@@ -111,27 +109,24 @@ export default function PomodoroTimer() {
       if (savedData) {
         const data: TimerData = JSON.parse(savedData);
 
-        // Check if we need to reset for a new day
-        const today = new Date().toDateString();
-        const lastDate = data.lastDate;
-
-        if (lastDate !== today) {
-          const now = new Date();
-          // If it's past 5am, reset the cycle count
-          if (now.getHours() >= RESET_HOUR) {
-            setCycleCount(0);
-            setTotalWorkToday(0);
-          } else {
-            setCycleCount(data.cycleCount);
-            setTotalWorkToday(data.totalWorkToday);
-          }
-        } else {
-          setCycleCount(data.cycleCount);
-          setTotalWorkToday(data.totalWorkToday);
+        // Reset based on a 5 AM boundary using timestamp
+        const now = new Date();
+        const resetBoundary = new Date();
+        resetBoundary.setHours(RESET_HOUR, 0, 0, 0);
+        if (now.getHours() < RESET_HOUR) {
+          resetBoundary.setDate(resetBoundary.getDate() - 1);
         }
-
-        setWorkTime(data.workTime);
-        setBreakTime(data.breakTime);
+        if (data.lastTimestamp < resetBoundary.getTime()) {
+          // Past reset time: clear today's stats
+          setTotalWorkToday(0);
+          setBreakTime(0);
+          setBonusCount(0);
+        } else {
+          // Same period: restore previous values
+          setTotalWorkToday(data.totalWorkToday);
+          setBreakTime(data.breakTime);
+          setBonusCount(data.bonusCount);
+        }
       }
       setIsInitialized(true);
     };
@@ -145,17 +140,16 @@ export default function PomodoroTimer() {
 
     const saveData = () => {
       const data: TimerData = {
-        workTime,
         breakTime,
         totalWorkToday,
-        lastDate: new Date().toDateString(),
-        cycleCount,
+        bonusCount,
+        lastTimestamp: Date.now(),
       };
       localStorage.setItem("pomodoroData", JSON.stringify(data));
     };
 
     saveData();
-  }, [workTime, breakTime, totalWorkToday, cycleCount, isInitialized]);
+  }, [breakTime, totalWorkToday, bonusCount, isInitialized]);
 
   // Timer logic
   useEffect(() => {
@@ -178,23 +172,7 @@ export default function PomodoroTimer() {
         const elapsed = Math.floor((Date.now() - startTimeRef.current) / 1000);
         setElapsedTime(elapsed);
 
-        if (timerState === "working") {
-          // Calculate earned break time in real-time
-          // FIXED: Only add the proportional break time, not compounding
-          const earnedBreakTime = Math.floor(elapsed * WORK_TO_BREAK_RATIO);
-          setBreakTime(initialBreakTime + earnedBreakTime);
-
-          // Check if we've reached a cycle threshold
-          const newTotalWork = totalWorkToday + elapsed;
-          const previousCycles = Math.floor(totalWorkToday / CYCLE_THRESHOLD);
-          const currentCycles = Math.floor(newTotalWork / CYCLE_THRESHOLD);
-
-          if (currentCycles > previousCycles) {
-            // Award bonus break time
-            setBreakTime((prev) => prev + CYCLE_BONUS);
-            setCycleCount((prev) => prev + 1);
-          }
-        } else if (timerState === "break") {
+        if (timerState === "break") {
           // Check if break time is over
           if (elapsed >= breakTime) {
             setTimerState("idle");
@@ -236,7 +214,7 @@ export default function PomodoroTimer() {
         clearInterval(timerRef.current);
       }
     };
-  }, [timerState, breakTime, totalWorkToday, initialBreakTime, audioLoaded]);
+  }, [timerState, breakTime, initialBreakTime, audioLoaded]);
 
   // Request notification permission
   useEffect(() => {
@@ -274,9 +252,18 @@ export default function PomodoroTimer() {
 
   const pauseTimer = () => {
     if (timerState === "working") {
-      // Update the total work time
-      setWorkTime((prev) => prev + elapsedTime);
-      setTotalWorkToday((prev) => prev + elapsedTime);
+      const newTotal = totalWorkToday + elapsedTime;
+      const newCount = Math.floor(newTotal / CYCLE_THRESHOLD);
+      const increment = newCount - bonusCount;
+
+      const passiveBreak = Math.floor(elapsedTime * WORK_TO_BREAK_RATIO);
+      setBreakTime((prev) => prev + passiveBreak);
+
+      if (increment > 0) {
+        setBreakTime((b) => b + increment * CYCLE_BONUS);
+      }
+      setBonusCount(newCount);
+      setTotalWorkToday(newTotal);
     } else if (timerState === "break") {
       // Subtract used break time from total break time
       setBreakTime((prev) => Math.max(0, prev - elapsedTime));
