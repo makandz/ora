@@ -9,8 +9,11 @@ export const metadata: Metadata = {
 
 export default function Home() {
   return (
-    <main className="min-h-screen flex items-center justify-center p-4">
+    <main className="min-h-screen flex flex-col items-center justify-center p-4">
       <PomodoroTimer />
+      <a href="/history" className="mt-8 text-blue-600 hover:underline">
+        View today\'s history
+      </a>
     </main>
   );
 }

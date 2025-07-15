@@ -9,11 +9,18 @@ import { useEffect, useRef, useState } from "react";
 
 type TimerState = "idle" | "working" | "break";
 
+interface SessionEntry {
+  type: TimerState;
+  duration: number;
+  timestamp: number;
+}
+
 interface TimerData {
   breakTime: number;
   totalWorkToday: number;
   bonusCount: number;
   lastTimestamp: number;
+  history: SessionEntry[];
 }
 
 const WORK_TO_BREAK_RATIO = 0.25; // 25% passive break
@@ -27,6 +34,7 @@ export default function PomodoroTimer() {
   const [elapsedTime, setElapsedTime] = useState(0);
   const [totalWorkToday, setTotalWorkToday] = useState(0);
   const [bonusCount, setBonusCount] = useState(0);
+  const [history, setHistory] = useState<SessionEntry[]>([]);
   const [isInitialized, setIsInitialized] = useState(false);
   const [audioLoaded, setAudioLoaded] = useState(false);
 
@@ -38,6 +46,13 @@ export default function PomodoroTimer() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useWakeLock();
+
+  const recordSession = (duration: number, type: TimerState) => {
+    setHistory((h) => [
+      ...h,
+      { type, duration, timestamp: Date.now() },
+    ])
+  }
 
   // Initialize audio with better error handling
   useEffect(() => {
@@ -121,11 +136,13 @@ export default function PomodoroTimer() {
           setTotalWorkToday(0);
           setBreakTime(0);
           setBonusCount(0);
+          setHistory([]);
         } else {
           // Same period: restore previous values
           setTotalWorkToday(data.totalWorkToday);
           setBreakTime(data.breakTime);
           setBonusCount(data.bonusCount);
+          setHistory(data.history || []);
         }
       }
       setIsInitialized(true);
@@ -144,12 +161,13 @@ export default function PomodoroTimer() {
         totalWorkToday,
         bonusCount,
         lastTimestamp: Date.now(),
+        history,
       };
       localStorage.setItem("pomodoroData", JSON.stringify(data));
     };
 
     saveData();
-  }, [breakTime, totalWorkToday, bonusCount, isInitialized]);
+  }, [breakTime, totalWorkToday, bonusCount, history, isInitialized]);
 
   // Timer logic
   useEffect(() => {
@@ -175,6 +193,7 @@ export default function PomodoroTimer() {
         if (timerState === "break") {
           // Check if break time is over
           if (elapsed >= breakTime) {
+            recordSession(breakTime, "break");
             setTimerState("idle");
             setBreakTime(0);
 
@@ -264,9 +283,11 @@ export default function PomodoroTimer() {
       }
       setBonusCount(newCount);
       setTotalWorkToday(newTotal);
+      recordSession(elapsedTime, "working");
     } else if (timerState === "break") {
       // Subtract used break time from total break time
       setBreakTime((prev) => Math.max(0, prev - elapsedTime));
+      recordSession(elapsedTime, "break");
     }
 
     setTimerState("idle");
